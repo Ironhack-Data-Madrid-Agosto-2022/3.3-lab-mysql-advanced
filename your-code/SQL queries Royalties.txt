@@ -1,0 +1,91 @@
+----------------------------------------------------------------------------------------------------------------------------------
+CHALLENGE 1
+----------------------------------------------------------------------------------------------------------------------------------
+Step 1
+----------------------------------------------------------------------------------------------------------------------------------
+select t.title_id, a. au_id, (t.price * s.qty * t.royalty / 100 * ta.royaltyper / 100) as sales_royalty 
+
+from titles as t
+
+left join titleauthor as ta
+on t.title_id = ta.title_id
+
+left join authors as a
+on ta.au_id = a.au_id
+
+left join sales as s
+on s.title_id = t.title_id;
+----------------------------------------------------------------------------------------------------------------------------------
+Step 2
+----------------------------------------------------------------------------------------------------------------------------------
+select a.au_id, t.title_id, sum(t.price * s.qty * t.royalty / 100 * ta.royaltyper / 100) as sales_royalty
+
+from titles as t
+
+left join titleauthor as ta
+on t.title_id = ta.title_id
+
+left join authors as a
+on ta.au_id = a.au_id
+
+left join sales as s
+on s.title_id = t.title_id
+
+group by t.title_id, a.au_id;
+----------------------------------------------------------------------------------------------------------------------------------
+Step 3
+----------------------------------------------------------------------------------------------------------------------------------
+select  a.au_id, sum(t.price * s.qty * t.royalty / 100 * ta.royaltyper / 100) + t.advance as TOTAL
+
+from titles as t
+
+left join titleauthor as ta
+on t.title_id = ta.title_id
+
+left join authors as a
+on ta.au_id = a.au_id
+
+left join sales as s
+on s.title_id = t.title_id
+
+group by a.au_id
+order by TOTAL desc
+limit 3
+
+
+----------------------------------------------------------------------------------------------------------------------------------
+CHALLENGE 2
+----------------------------------------------------------------------------------------------------------------------------------
+select tmp2.au_id, tmp2.total_royalties + tmp2.advance as TOTAL
+from
+(select tmp1.au_id, tmp1.title_id, sum(total_royalty) as total_royalties, tmp1.advance
+from
+(select t.title_id, ta.au_id, (t.price * s.qty * t.royalty / 100 * ta.royaltyper / 100) as total_royalty, t.advance
+from titles as t
+	left join titleauthor as ta
+	on t.title_id = ta.title_id
+	left join sales as s
+	on t.title_id = s.title_id) as tmp1
+group by tmp1.au_id, tmp1.title_id) as tmp2
+order by TOTAL desc
+LIMIT 3
+;
+
+
+----------------------------------------------------------------------------------------------------------------------------------
+CHALLENGE 3
+----------------------------------------------------------------------------------------------------------------------------------
+create table most_profiting_authors 
+select tmp2.au_id, tmp2.total_royalties + tmp2.advance as profits 
+from
+(select tmp1.au_id, tmp1.title_id, sum(total_royalty) as total_royalties, tmp1.advance
+from
+(select t.title_id, ta.au_id, (t.price * s.qty * t.royalty / 100 * ta.royaltyper / 100) as total_royalty, t.advance
+from titles as t
+	left join titleauthor as ta
+	on t.title_id = ta.title_id
+	left join sales as s
+	on t.title_id = s.title_id) as tmp1
+group by tmp1.au_id, tmp1.title_id) as tmp2
+order by profits desc
+LIMIT 3;
