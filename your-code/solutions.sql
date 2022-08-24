@@ -28,6 +28,7 @@ GROUP BY au_id , title_id
 ;
 
 -- Ejercicio 3 --
+CREATE TABLE most_profiting_authors
 
 SELECT au_id, sum(total_a_t) AS pasta
 FROM
