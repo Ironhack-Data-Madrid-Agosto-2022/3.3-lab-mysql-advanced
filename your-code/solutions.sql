@@ -20,7 +20,7 @@ group by title_id, au_id;
 
 -- Step 3: Calculate the total profits of each author
 
-CREATE TEMPORARY TABLE author_profits
+create temporary table author_profits
 as (Select title_id, au_id, sum(sales_royalty) as Agg_royalties  
 from royalty_table
 group by title_id, au_id);
@@ -30,6 +30,30 @@ join titles b on a.title_id=b.title_id
 order by Profits desc
 limit 3;
 -- Challenge 2 -Alternative Solution --
--- Create temporary table publications.royalties_authors
+drop temporary table if exists royalty_table;
+
+
+create temporary table sales
+select t.title_id, a.au_id, (t.price * s.qty * t.royalty * ta.royaltyper / 10000) as sale_royalty
+from titles t
+inner join sales s on s.title_id = t.title_id
+inner join titleauthor ta on ta.title_id = s.title_id
+inner join authors a on a.au_id = ta.au_id
+order by t.title_id, a.au_id;
+
 
 -- Challenge 3
+drop temporary table if exists  author_profits;
+
+create temporary table author_profits
+as (Select title_id, au_id, sum(sales_royalty) as Agg_royalties  
+from royalty_table
+group by title_id, au_id);
+
+Select a.*, b.advance, (Agg_royalties+advance) as Profits from author_profits a
+join titles b on a.title_id=b.title_id
+order by Profits desc
+limit 3;
+-- Challenge 2 -Alternative Solution --
+
+
