@@ -2,58 +2,74 @@
 
 
 -- Step 1: Calculate the royalties of each sales for each author
-select sales.title_id, titleauthor.au_id, (titles.price * sales.qty * titles.royalty / 100 * titleauthor.royaltyper / 100) 
-as sales_royalty from sales 
-join  titleauthor on sales.title_id = titleauthor.title_id
-join  titles on titleauthor.title_id = titles.title_id
-;
--- Step 2: Aggregate the total royalties for each title for each author
-create temporary table royalty_table
-as (select sales.title_id, titleauthor.au_id,  (titles.price * sales.qty * titles.royalty / 100 * titleauthor.royaltyper / 100) 
-as sales_royalty 
-from sales 
-join titleauthor on sales.title_id = titleauthor.title_id
-join titles on titleauthor.title_id = titles.title_id);
+select t.title_id,ta.au_id,t.advance, t.price * sa.qty * t.royalty / 100 * ta.royaltyper / 100 as sales_royalties
+from sales as sa
+left join titles as t on sa.title_id = t.title_id
+left join titleauthor as ta on t.title_id = ta.title_id;
 
-Select title_id, au_id, sum(sales_royalty) as royaleties  from royalty_table
-group by title_id, au_id;
+-- Step 2: Aggregate the total royalties for each title for each author
+
+select subq.title_id, subq.au_id, subq.advance, sum(sales_royalties) as royalties
+from
+(select t.title_id,ta.au_id, t.advance, t.price * sa.qty * t.royalty / 100 * ta.royaltyper / 100 as sales_royalties
+from sales as sa
+left join titles as t on sa.title_id = t.title_id
+left join titleauthor as ta on t.title_id = ta.title_id) as subq
+group by au_id, title_id
+order by royalties desc;
 
 -- Step 3: Calculate the total profits of each author
-
-create temporary table author_profits
-as (Select title_id, au_id, sum(sales_royalty) as Agg_royalties  
-from royalty_table
-group by title_id, au_id);
-
-Select a.*, b.advance, (Agg_royalties+advance) as Profits from author_profits a
-join titles b on a.title_id=b.title_id
-order by Profits desc
+select subq2.au_id, subq2.advance + royalties as profit
+from
+(select subq.title_id, subq.au_id, subq.advance, sum(sales_royalties) as royalties
+from
+(select t.title_id,ta.au_id, t.advance, t.price * sa.qty * t.royalty / 100 * ta.royaltyper / 100 as sales_royalties
+from sales as sa
+left join titles as t on sa.title_id = t.title_id
+left join titleauthor as ta on t.title_id = ta.title_id) as subq
+group by au_id, title_id
+order by royalties desc) as subq2
+group by au_id, title_id
+order by profit desc
 limit 3;
+
+
 -- Challenge 2 -Alternative Solution --
-drop temporary table if exists royalty_table;
 
+create temporary table Publicacionesv2
 
-create temporary table sales
-select t.title_id, a.au_id, (t.price * s.qty * t.royalty * ta.royaltyper / 10000) as sale_royalty
-from titles t
-inner join sales s on s.title_id = t.title_id
-inner join titleauthor ta on ta.title_id = s.title_id
-inner join authors a on a.au_id = ta.au_id
-order by t.title_id, a.au_id;
+select subq2.au_id, subq2.advance + royalties as profit
+from
+(select subq.title_id, subq.au_id, subq.advance, sum(sales_royalties) as royalties
+from
+(select t.title_id,ta.au_id, t.advance, t.price * sa.qty * t.royalty / 100 * ta.royaltyper / 100 as sales_royalties
+from sales as sa
+left join titles as t on sa.title_id = t.title_id
+left join titleauthor as ta on t.title_id = ta.title_id) as subq
+group by au_id, title_id
+order by royalties desc) as subq2
+group by au_id, title_id
+order by profit desc
+limit 3;
 
 
 -- Challenge 3
-drop temporary table if exists  author_profits;
 
-create temporary table author_profits
-as (Select title_id, au_id, sum(sales_royalty) as Agg_royalties  
-from royalty_table
-group by title_id, au_id);
+create table if not exists Autores_con_mas_profit
 
-Select a.*, b.advance, (Agg_royalties+advance) as Profits from author_profits a
-join titles b on a.title_id=b.title_id
-order by Profits desc
+select subq2.au_id, subq2.advance + royalties as profit
+from
+(select subq.title_id, subq.au_id, subq.advance, sum(sales_royalties) as royalties
+from
+(select t.title_id,ta.au_id, t.advance, t.price * sa.qty * t.royalty / 100 * ta.royaltyper / 100 as sales_royalties
+from sales as sa
+left join titles as t on sa.title_id = t.title_id
+left join titleauthor as ta on t.title_id = ta.title_id) as subq
+group by au_id, title_id
+order by royalties desc) as subq2
+group by au_id, title_id
+order by profit desc
 limit 3;
--- Challenge 2 -Alternative Solution --
+
 
 
